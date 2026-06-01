@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\DualSenseLab.Core\DualSenseLab.Core.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net7.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>GCE</AssemblyName>
+    <Product>Great Controller Emulator</Product>
+    <Title>Great Controller Emulator</Title>
+  </PropertyGroup>
+
+</Project>

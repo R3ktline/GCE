@@ -1,0 +1,145 @@
+<Window x:Class="DualSenseLab.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Great Controller Emulator" Height="900" Width="1480" MinHeight="760" MinWidth="1180"
+        Background="#0B0E14" Foreground="#EEF0F7" WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <SolidColorBrush x:Key="Panel" Color="#141824"/>
+        <SolidColorBrush x:Key="Panel2" Color="#1A2030"/>
+        <SolidColorBrush x:Key="Accent" Color="#7C6CFF"/>
+        <SolidColorBrush x:Key="Muted" Color="#98A1B5"/>
+        <Style TargetType="TextBlock"><Setter Property="FontFamily" Value="Segoe UI"/><Setter Property="Foreground" Value="#EEF0F7"/></Style>
+        <Style TargetType="Button">
+            <Setter Property="FontFamily" Value="Segoe UI"/><Setter Property="Foreground" Value="#EEF0F7"/>
+            <Setter Property="Background" Value="#242A3A"/><Setter Property="BorderBrush" Value="#343C50"/>
+            <Setter Property="Padding" Value="14,9"/><Setter Property="Margin" Value="0,4"/><Setter Property="Cursor" Value="Hand"/>
+        </Style>
+        <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="{StaticResource Accent}"/><Setter Property="BorderBrush" Value="{StaticResource Accent}"/>
+        </Style>
+        <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="#B23A54"/><Setter Property="BorderBrush" Value="#D05B73"/>
+        </Style>
+        <Style x:Key="NavButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="HorizontalContentAlignment" Value="Left"/><Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/><Setter Property="Padding" Value="16,12"/><Setter Property="Margin" Value="0,2"/>
+        </Style>
+        <Style TargetType="ComboBox"><Setter Property="Padding" Value="8"/><Setter Property="Margin" Value="0,5"/><Setter Property="Background" Value="#242A3A"/><Setter Property="Foreground" Value="#11131A"/></Style>
+        <Style TargetType="Slider"><Setter Property="Margin" Value="0,5"/></Style>
+        <Style TargetType="TextBox"><Setter Property="Padding" Value="8"/><Setter Property="Margin" Value="0,5"/><Setter Property="Background" Value="#242A3A"/><Setter Property="Foreground" Value="#EEF0F7"/><Setter Property="BorderBrush" Value="#343C50"/></Style>
+        <Style x:Key="Card" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource Panel}"/><Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Padding" Value="18"/><Setter Property="Margin" Value="0,0,14,14"/>
+        </Style>
+        <Style x:Key="SectionTitle" TargetType="TextBlock"><Setter Property="FontSize" Value="20"/><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Margin" Value="0,0,0,12"/></Style>
+        <Style x:Key="Caption" TargetType="TextBlock"><Setter Property="Foreground" Value="{StaticResource Muted}"/><Setter Property="FontSize" Value="12"/></Style>
+    </Window.Resources>
+    <Grid>
+        <Grid.ColumnDefinitions><ColumnDefinition Width="235"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+        <Border Background="#10131C" BorderBrush="#252B39" BorderThickness="0,0,1,0">
+            <DockPanel Margin="16">
+                <StackPanel DockPanel.Dock="Bottom">
+                    <Border Background="#1A2030" CornerRadius="8" Padding="12" Margin="0,0,0,10">
+                        <StackPanel><TextBlock Text="SIMULATOR ACTIVE" Foreground="#55D6A5" FontWeight="SemiBold" FontSize="11"/>
+                            <TextBlock Text="No physical HID writes" Style="{StaticResource Caption}" Margin="0,4,0,0"/></StackPanel>
+                    </Border>
+                    <Button x:Name="ResetEffectsNavButton" Style="{StaticResource DangerButton}" Content="Reset Effects" Click="ResetEffects_Click" ToolTip="Immediately disables both adaptive trigger effects."/>
+                </StackPanel>
+                <StackPanel>
+                    <TextBlock Text="GREAT CONTROLLER" Foreground="#A99FFF" FontSize="13" FontWeight="Bold"/>
+                    <TextBlock Text="EMULATOR" FontSize="30" FontWeight="Light" Margin="0,-4,0,22"/>
+                    <Button Style="{StaticResource NavButton}" Content="Dashboard" Tag="0" Click="Navigate_Click"/>
+                    <Button Style="{StaticResource NavButton}" Content="Adaptive Triggers" Tag="1" Click="Navigate_Click"/>
+                    <Button Style="{StaticResource NavButton}" Content="Stick Calibration" Tag="2" Click="Navigate_Click"/>
+                    <Button Style="{StaticResource NavButton}" Content="Input Tester" Tag="3" Click="Navigate_Click"/>
+                    <Button Style="{StaticResource NavButton}" Content="Profiles" Tag="4" Click="Navigate_Click"/>
+                    <Button Style="{StaticResource NavButton}" Content="Settings" Tag="5" Click="Navigate_Click"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions><RowDefinition Height="72"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+            <Border BorderBrush="#252B39" BorderThickness="0,0,0,1" Padding="26,0">
+                <Grid><TextBlock x:Name="PageTitle" Text="Dashboard" FontSize="22" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <Ellipse Fill="#55D6A5" Height="8" Width="8" Margin="0,0,8,0"/><TextBlock Text="DualSense Simulator connected" Foreground="#BCC4D5"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+            <TabControl x:Name="Pages" Grid.Row="1" Background="#0B0E14" BorderThickness="0" Padding="24" SelectionChanged="Pages_SelectionChanged">
+                <TabControl.Resources><Style TargetType="TabItem"><Setter Property="Visibility" Value="Collapsed"/></Style></TabControl.Resources>
+                <TabItem>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel>
+                        <TextBlock Text="Controller overview" FontSize="28" FontWeight="Light"/><TextBlock Text="Live status, connection capabilities, and a quick health snapshot." Style="{StaticResource Caption}" Margin="0,6,0,20"/>
+                        <WrapPanel>
+                            <Border Style="{StaticResource Card}" Width="330"><StackPanel><TextBlock Text="CONNECTED CONTROLLER" Style="{StaticResource Caption}"/><TextBlock Text="DualSense Simulator" FontSize="20" Margin="0,10,0,6"/><TextBlock Text="SIM-054C-0CE6-DEMO" Foreground="#A99FFF"/><TextBlock Text="Simulator connection" Style="{StaticResource Caption}" Margin="0,12,0,0"/></StackPanel></Border>
+                            <Border Style="{StaticResource Card}" Width="230"><StackPanel><TextBlock Text="BATTERY" Style="{StaticResource Caption}"/><TextBlock Text="82%" FontSize="36" Margin="0,8,0,0"/><ProgressBar Value="82" Height="5" Margin="0,12,0,0" Foreground="#55D6A5"/></StackPanel></Border>
+                            <Border Style="{StaticResource Card}" Width="300"><StackPanel><TextBlock Text="OUTPUT SUPPORT" Style="{StaticResource Caption}"/><TextBlock Text="Safe simulation" FontSize="20" Margin="0,10,0,5"/><TextBlock Text="Physical USB output is not enabled in this MVP." Style="{StaticResource Caption}" TextWrapping="Wrap"/></StackPanel></Border>
+                        </WrapPanel>
+                        <TextBlock Text="Live input" Style="{StaticResource SectionTitle}" Margin="0,8,0,12"/>
+                        <WrapPanel>
+                            <Border Style="{StaticResource Card}" Width="330"><StackPanel><TextBlock Text="LEFT STICK" Style="{StaticResource Caption}"/><TextBlock x:Name="DashboardLeftStick" Text="X  0.000    Y  0.000" FontSize="22" Margin="0,12,0,0"/></StackPanel></Border>
+                            <Border Style="{StaticResource Card}" Width="330"><StackPanel><TextBlock Text="RIGHT STICK" Style="{StaticResource Caption}"/><TextBlock x:Name="DashboardRightStick" Text="X  0.000    Y  0.000" FontSize="22" Margin="0,12,0,0"/></StackPanel></Border>
+                            <Border Style="{StaticResource Card}" Width="330"><StackPanel><TextBlock Text="ACTIVE BUTTONS" Style="{StaticResource Caption}"/><TextBlock x:Name="DashboardButtons" Text="None" FontSize="22" Margin="0,12,0,0"/></StackPanel></Border>
+                        </WrapPanel>
+                    </StackPanel></ScrollViewer>
+                </TabItem>
+                <TabItem>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel>
+                        <TextBlock Text="Adaptive trigger editor" FontSize="28" FontWeight="Light"/><TextBlock Text="Configure each trigger independently. Values are validated before effects are applied." Style="{StaticResource Caption}" Margin="0,6,0,20"/>
+                        <Border Background="#2D2430" BorderBrush="#7A5361" BorderThickness="1" CornerRadius="8" Padding="14" Margin="0,0,0,16"><TextBlock Text="Safety note: effects are simulated in this build. USB HID writes remain disabled until a verified hardware adapter is installed."/></Border>
+                        <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="18"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Style="{StaticResource Card}"><StackPanel><TextBlock Text="LEFT TRIGGER (L2)" Style="{StaticResource SectionTitle}"/><TextBlock Text="Preset" Style="{StaticResource Caption}"/><ComboBox x:Name="LeftPreset"/>
+                                <TextBlock Text="Resistance starts" Style="{StaticResource Caption}" Margin="0,9,0,0"/><Slider x:Name="LeftStart" Minimum="0" Maximum="99" Value="20" TickFrequency="5" ValueChanged="Slider_ValueChanged"/><TextBlock x:Name="LeftStartLabel" Text="20%"/>
+                                <TextBlock Text="Resistance ends" Style="{StaticResource Caption}" Margin="0,9,0,0"/><Slider x:Name="LeftEnd" Minimum="1" Maximum="100" Value="80" TickFrequency="5" ValueChanged="Slider_ValueChanged"/><TextBlock x:Name="LeftEndLabel" Text="80%"/>
+                                <TextBlock Text="Strength" Style="{StaticResource Caption}" Margin="0,9,0,0"/><Slider x:Name="LeftStrength" Minimum="0" Maximum="100" Value="35" TickFrequency="5" ValueChanged="Slider_ValueChanged"/><TextBlock x:Name="LeftStrengthLabel" Text="35%"/></StackPanel></Border>
+                            <Border Grid.Column="2" Style="{StaticResource Card}"><StackPanel><TextBlock Text="RIGHT TRIGGER (R2)" Style="{StaticResource SectionTitle}"/><TextBlock Text="Preset" Style="{StaticResource Caption}"/><ComboBox x:Name="RightPreset"/>
+                                <TextBlock Text="Resistance starts" Style="{StaticResource Caption}" Margin="0,9,0,0"/><Slider x:Name="RightStart" Minimum="0" Maximum="99" Value="20" TickFrequency="5" ValueChanged="Slider_ValueChanged"/><TextBlock x:Name="RightStartLabel" Text="20%"/>
+                                <TextBlock Text="Resistance ends" Style="{StaticResource Caption}" Margin="0,9,0,0"/><Slider x:Name="RightEnd" Minimum="1" Maximum="100" Value="80" TickFrequency="5" ValueChanged="Slider_ValueChanged"/><TextBlock x:Name="RightEndLabel" Text="80%"/>
+                                <TextBlock Text="Strength" Style="{StaticResource Caption}" Margin="0,9,0,0"/><Slider x:Name="RightStrength" Minimum="0" Maximum="100" Value="35" TickFrequency="5" ValueChanged="Slider_ValueChanged"/><TextBlock x:Name="RightStrengthLabel" Text="35%"/></StackPanel></Border>
+                        </Grid>
+                        <StackPanel Orientation="Horizontal"><Button Style="{StaticResource PrimaryButton}" Content="Apply and test effects" Click="ApplyTriggers_Click"/><Button Content="Reset both triggers" Margin="12,4,0,4" Click="ResetEffects_Click"/><TextBlock x:Name="TriggerStatus" VerticalAlignment="Center" Margin="16,0,0,0" Foreground="#98A1B5"/></StackPanel>
+                    </StackPanel></ScrollViewer>
+                </TabItem>
+                <TabItem>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel>
+                        <TextBlock Text="Stick calibration" FontSize="28" FontWeight="Light"/><TextBlock Text="Run a timed sample and tune software correction. This does not physically repair stick drift." Style="{StaticResource Caption}" Margin="0,6,0,20"/>
+                        <WrapPanel>
+                            <Border Style="{StaticResource Card}" Width="380"><StackPanel><TextBlock Text="DRIFT DETECTION WIZARD" Style="{StaticResource SectionTitle}"/><TextBlock Text="Leave the sticks untouched, then run a 4-second center sample." TextWrapping="Wrap" Foreground="#BCC4D5"/><Button x:Name="RunCalibrationButton" Style="{StaticResource PrimaryButton}" Content="Run center calibration" Margin="0,16,0,0" Click="RunCalibration_Click"/><TextBlock x:Name="CalibrationStatus" Text="Ready to sample" Foreground="#98A1B5" Margin="0,12,0,0" TextWrapping="Wrap"/></StackPanel></Border>
+                            <Border Style="{StaticResource Card}" Width="380"><StackPanel><TextBlock Text="LAST REPORT" Style="{StaticResource SectionTitle}"/><TextBlock x:Name="CalibrationMetrics" Text="No calibration report yet." Foreground="#BCC4D5" TextWrapping="Wrap"/><Button Content="Export diagnostics report" Margin="0,16,0,0" Click="ExportDiagnostics_Click"/></StackPanel></Border>
+                        </WrapPanel>
+                        <Border Style="{StaticResource Card}"><StackPanel><TextBlock Text="SOFTWARE MITIGATION" Style="{StaticResource SectionTitle}"/><TextBlock Text="Correction affects the app's mapped output only. Games will not see it unless a supported virtual-controller mode is added." Foreground="#E0B669" TextWrapping="Wrap" Margin="0,0,0,14"/>
+                            <TextBlock Text="Deadzone" Style="{StaticResource Caption}"/><Slider x:Name="DeadzoneSlider" Minimum="0" Maximum=".4" Value=".08" TickFrequency=".01" ValueChanged="Mitigation_ValueChanged"/><TextBlock x:Name="DeadzoneLabel" Text="8%"/>
+                            <TextBlock Text="Anti-deadzone" Style="{StaticResource Caption}" Margin="0,8,0,0"/><Slider x:Name="AntiDeadzoneSlider" Minimum="0" Maximum=".3" Value="0" TickFrequency=".01" ValueChanged="Mitigation_ValueChanged"/><TextBlock x:Name="AntiDeadzoneLabel" Text="0%"/>
+                            <TextBlock Text="Smoothing" Style="{StaticResource Caption}" Margin="0,8,0,0"/><Slider x:Name="SmoothingSlider" Minimum="0" Maximum=".6" Value=".12" TickFrequency=".01" ValueChanged="Mitigation_ValueChanged"/><TextBlock x:Name="SmoothingLabel" Text="12%"/></StackPanel></Border>
+                    </StackPanel></ScrollViewer>
+                </TabItem>
+                <TabItem>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel>
+                        <TextBlock Text="Input tester" FontSize="28" FontWeight="Light"/><TextBlock Text="Real-time simulator input for sticks, motion, touchpad, buttons, and triggers." Style="{StaticResource Caption}" Margin="0,6,0,20"/>
+                        <WrapPanel>
+                            <Border Style="{StaticResource Card}" Width="310"><StackPanel><TextBlock Text="LEFT STICK X / Y" Style="{StaticResource SectionTitle}"/><Canvas Width="250" Height="250" Background="#0F131D"><Line X1="125" X2="125" Y1="0" Y2="250" Stroke="#343C50"/><Line X1="0" X2="250" Y1="125" Y2="125" Stroke="#343C50"/><Ellipse x:Name="LeftDot" Width="14" Height="14" Fill="#7C6CFF"/></Canvas></StackPanel></Border>
+                            <Border Style="{StaticResource Card}" Width="310"><StackPanel><TextBlock Text="RIGHT STICK X / Y" Style="{StaticResource SectionTitle}"/><Canvas Width="250" Height="250" Background="#0F131D"><Line X1="125" X2="125" Y1="0" Y2="250" Stroke="#343C50"/><Line X1="0" X2="250" Y1="125" Y2="125" Stroke="#343C50"/><Ellipse x:Name="RightDot" Width="14" Height="14" Fill="#55D6A5"/></Canvas></StackPanel></Border>
+                            <Border Style="{StaticResource Card}" Width="350"><StackPanel><TextBlock Text="LIVE SENSOR DATA" Style="{StaticResource SectionTitle}"/><TextBlock x:Name="MotionText" Foreground="#BCC4D5" TextWrapping="Wrap"/><TextBlock Text="Touchpad" Style="{StaticResource Caption}" Margin="0,18,0,5"/><ProgressBar x:Name="TouchX" Minimum="0" Maximum="1" Height="8" Foreground="#7C6CFF"/><ProgressBar x:Name="TouchY" Minimum="0" Maximum="1" Height="8" Margin="0,7,0,0" Foreground="#55D6A5"/><TextBlock Text="Buttons" Style="{StaticResource Caption}" Margin="0,18,0,5"/><TextBlock x:Name="ButtonTesterText" Text="None"/></StackPanel></Border>
+                        </WrapPanel>
+                    </StackPanel></ScrollViewer>
+                </TabItem>
+                <TabItem>
+                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="320"/><ColumnDefinition Width="20"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                        <StackPanel><TextBlock Text="Profiles" FontSize="28" FontWeight="Light"/><TextBlock Text="Save and reuse lab configurations." Style="{StaticResource Caption}" Margin="0,6,0,18"/><ListBox x:Name="ProfileList" Height="430" Background="#141824" Foreground="#EEF0F7" BorderBrush="#343C50" SelectionChanged="ProfileList_SelectionChanged"/><Button Style="{StaticResource PrimaryButton}" Content="New profile" Click="NewProfile_Click"/><Button Content="Duplicate selected" Click="DuplicateProfile_Click"/><Button Content="Delete selected" Click="DeleteProfile_Click"/></StackPanel>
+                        <Border Grid.Column="2" Style="{StaticResource Card}" Margin="0"><StackPanel><TextBlock Text="PROFILE DETAILS" Style="{StaticResource SectionTitle}"/><TextBlock Text="Name" Style="{StaticResource Caption}"/><TextBox x:Name="ProfileName"/><TextBlock Text="Assigned executable" Style="{StaticResource Caption}" Margin="0,10,0,0"/><TextBox x:Name="AssignedExecutable" ToolTip="Optional executable name used for future automatic switching."/><CheckBox x:Name="AutoApply" Content="Automatically apply when executable launches" Margin="0,12" Foreground="#EEF0F7"/><TextBlock Text="Auto-apply is stored in profiles. Process monitoring is not enabled in this MVP." Foreground="#E0B669" TextWrapping="Wrap"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,18,0,0"><Button Style="{StaticResource PrimaryButton}" Content="Save profile" Click="SaveProfile_Click"/><Button Content="Export JSON" Margin="10,4,0,4" Click="ExportProfile_Click"/><Button Content="Import JSON" Margin="10,4,0,4" Click="ImportProfile_Click"/></StackPanel></StackPanel></Border>
+                    </Grid>
+                </TabItem>
+                <TabItem>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel>
+                        <TextBlock Text="Settings" FontSize="28" FontWeight="Light"/><TextBlock Text="Output controls and compatibility notes." Style="{StaticResource Caption}" Margin="0,6,0,20"/>
+                        <Border Style="{StaticResource Card}"><StackPanel><TextBlock Text="LIGHT BAR" Style="{StaticResource SectionTitle}"/><TextBlock Text="Hex color" Style="{StaticResource Caption}"/><TextBox x:Name="LightBarColor" Text="#6C63FF" Width="180" HorizontalAlignment="Left"/><Button Content="Apply light-bar color" Width="180" HorizontalAlignment="Left" Click="ApplyLightBar_Click"/></StackPanel></Border>
+                        <Border Style="{StaticResource Card}"><StackPanel><TextBlock Text="VIBRATION TEST" Style="{StaticResource SectionTitle}"/><TextBlock Text="Conservative test strength" Style="{StaticResource Caption}"/><Slider x:Name="VibrationSlider" Minimum="0" Maximum="60" Value="20" Width="360" HorizontalAlignment="Left"/><Button Content="Run brief vibration test" Width="200" HorizontalAlignment="Left" Click="TestVibration_Click"/></StackPanel></Border>
+                        <Border Style="{StaticResource Card}"><StackPanel><TextBlock Text="VIRTUAL CONTROLLER OUTPUT" Style="{StaticResource SectionTitle}"/><CheckBox Content="Enable virtual-controller output" IsEnabled="False" Foreground="#98A1B5"/><TextBlock Text="Unavailable in this build. A reliable implementation requires an explicit driver dependency such as ViGEmBus; no driver is installed or requested automatically." Foreground="#E0B669" TextWrapping="Wrap" Margin="0,8,0,0"/></StackPanel></Border>
+                    </StackPanel></ScrollViewer>
+                </TabItem>
+            </TabControl>
+        </Grid>
+    </Grid>
+</Window>
