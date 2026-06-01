@@ -147,7 +147,22 @@
                         <Border Style="{StaticResource Card}"><StackPanel><TextBlock Text="CONTROLLER LEDS AND MICROPHONE" Style="{StaticResource SectionTitle}"/>
                             <TextBlock Text="Player LED bitmask (0-31)" Style="{StaticResource Caption}"/><Slider x:Name="PlayerLedsSlider" Minimum="0" Maximum="31" Value="4" TickFrequency="1" IsSnapToTickEnabled="True" Width="360" HorizontalAlignment="Left"/><Button Content="Apply player LEDs" Width="180" HorizontalAlignment="Left" Click="ApplyPlayerLeds_Click"/>
                             <CheckBox x:Name="MicrophoneLedEnabled" Content="Microphone LED enabled" Margin="0,12,0,0" Foreground="#EEF0F7" Checked="MicrophoneLed_Changed" Unchecked="MicrophoneLed_Changed"/>
+                            <CheckBox x:Name="MicrophoneLedPulse" Content="Pulse microphone LED" Margin="0,8,0,0" Foreground="#EEF0F7" Checked="MicrophoneLed_Changed" Unchecked="MicrophoneLed_Changed"/>
                             <CheckBox x:Name="MicrophoneMuted" Content="Mute controller microphone" Margin="0,8,0,0" Foreground="#EEF0F7" Checked="MicrophoneMute_Changed" Unchecked="MicrophoneMute_Changed"/>
+                        </StackPanel></Border>
+                        <Border Style="{StaticResource Card}"><StackPanel><TextBlock Text="AUDIO AND EFFECT TUNING" Style="{StaticResource SectionTitle}"/>
+                            <TextBlock Text="Headphone volume (0-127)" Style="{StaticResource Caption}"/><Slider x:Name="HeadphoneVolumeSlider" Minimum="0" Maximum="127" Value="80" TickFrequency="1"/>
+                            <TextBlock Text="Speaker volume (0-255)" Style="{StaticResource Caption}"/><Slider x:Name="SpeakerVolumeSlider" Minimum="0" Maximum="255" Value="80" TickFrequency="1"/>
+                            <TextBlock Text="Microphone volume (0-64)" Style="{StaticResource Caption}"/><Slider x:Name="MicrophoneVolumeSlider" Minimum="0" Maximum="64" Value="40" TickFrequency="1"/>
+                            <TextBlock Text="Speaker preamp gain (0-7)" Style="{StaticResource Caption}"/><Slider x:Name="SpeakerPreampSlider" Minimum="0" Maximum="7" Value="4" TickFrequency="1" IsSnapToTickEnabled="True"/>
+                            <TextBlock Text="Effect power reduction (0-7)" Style="{StaticResource Caption}"/><Slider x:Name="EffectPowerReductionSlider" Minimum="0" Maximum="7" Value="0" TickFrequency="1" IsSnapToTickEnabled="True"/>
+                            <TextBlock Text="LED brightness (0 high, 1 medium, 2 low)" Style="{StaticResource Caption}"/><Slider x:Name="LedBrightnessSlider" Minimum="0" Maximum="2" Value="0" TickFrequency="1" IsSnapToTickEnabled="True"/>
+                            <CheckBox x:Name="RouteInternalSpeaker" Content="Route audio to internal speaker" Margin="0,8,0,0" Foreground="#EEF0F7"/>
+                            <CheckBox x:Name="ForceInternalMicrophone" Content="Force internal microphone" Margin="0,8,0,0" Foreground="#EEF0F7"/>
+                            <CheckBox x:Name="ForceHeadsetMicrophone" Content="Force headset microphone" Margin="0,8,0,0" Foreground="#EEF0F7"/>
+                            <CheckBox x:Name="AudioMuted" Content="Mute controller audio" Margin="0,8,0,0" Foreground="#EEF0F7"/>
+                            <CheckBox x:Name="FadeLightBar" Content="Fade light bar before applying color" Margin="0,8,0,0" Foreground="#EEF0F7"/>
+                            <Button Content="Apply audio and effect tuning" Width="230" HorizontalAlignment="Left" Margin="0,12,0,0" Click="ApplyHardwareTuning_Click"/>
                         </StackPanel></Border>
                         <Border Style="{StaticResource Card}"><StackPanel><TextBlock Text="VIBRATION TEST" Style="{StaticResource SectionTitle}"/><TextBlock Text="Test strength" Style="{StaticResource Caption}"/><Slider x:Name="VibrationSlider" Minimum="0" Maximum="100" Value="20" Width="360" HorizontalAlignment="Left"/><Button Content="Run brief vibration test" Width="200" HorizontalAlignment="Left" Click="TestVibration_Click"/></StackPanel></Border>
                         <Border Style="{StaticResource Card}"><StackPanel>

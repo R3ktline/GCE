@@ -5,6 +5,7 @@ namespace DualSenseLab.Core;
 public enum ConnectionType { Usb, Bluetooth, Simulator }
 public enum TriggerPreset { Off, SoftResistance, HardStop, ProgressiveResistance, Pulse, WeaponBreakpoint, Custom }
 public enum ResponseCurve { Linear, Precision, Aggressive }
+public enum MicrophoneLedMode : byte { Off, On, Pulse }
 
 public sealed record ControllerInfo(
     string DisplayName,
@@ -33,7 +34,10 @@ public sealed record InputState(
     double AccelerometerZ = 0,
     StickPoint? SecondaryTouchpad = null,
     bool SecondaryTouchpadActive = false,
-    bool BatteryCharging = false);
+    bool BatteryCharging = false,
+    bool HeadsetConnected = false,
+    bool MicrophoneConnected = false,
+    bool MicrophoneMuted = false);
 
 public sealed class VirtualControllerConfiguration
 {
@@ -63,6 +67,18 @@ public sealed class TriggerConfiguration
     public int StartPosition { get; set; } = 20;
     public int EndPosition { get; set; } = 80;
     public int Strength { get; set; } = 35;
+}
+
+public sealed class ControllerAudioConfiguration
+{
+    public byte HeadphoneVolume { get; set; } = 80;
+    public byte SpeakerVolume { get; set; } = 80;
+    public byte MicrophoneVolume { get; set; } = 40;
+    public bool RouteToInternalSpeaker { get; set; }
+    public bool ForceInternalMicrophone { get; set; }
+    public bool ForceHeadsetMicrophone { get; set; }
+    public bool AudioMuted { get; set; }
+    public byte SpeakerPreampGain { get; set; } = 4;
 }
 
 public sealed class StickCompensation

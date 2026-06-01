@@ -112,16 +112,16 @@ public class CoreTests
     {
         var output = new DualSenseOutputState
         {
-            RightMotor = 10, LeftMotor = 20, MicrophoneLed = true, MicrophoneMuted = true,
+            RightMotor = 10, LeftMotor = 20, MicrophoneLed = MicrophoneLedMode.On, MicrophoneMuted = true,
             PlayerLeds = 0x1F, LightbarRed = 1, LightbarGreen = 2, LightbarBlue = 3,
-            RightTrigger = DualSenseTriggerEffect.Feedback(2, 4),
-            LeftTrigger = DualSenseTriggerEffect.Weapon(2, 5, 6)
+            RightTrigger = DualSenseTriggerEffect.UniformResistance(20, 80),
+            LeftTrigger = DualSenseTriggerEffect.ResistanceSection(20, 80, 120)
         };
         var report = DualSenseOutputReport.BuildUsb(output);
         Assert.Equal(48, report.Length);
         Assert.Equal(0x02, report[0]);
         Assert.Equal(10, report[3]); Assert.Equal(20, report[4]);
-        Assert.Equal(0x21, report[11]); Assert.Equal(0x25, report[22]);
+        Assert.Equal(0x01, report[11]); Assert.Equal(0x02, report[22]);
         Assert.Equal(0x1F, report[44]);
         Assert.Equal(new byte[] { 1, 2, 3 }, report[45..48]);
     }
@@ -145,6 +145,44 @@ public class CoreTests
         Assert.Contains("Cross", state.Buttons);
         Assert.Contains("R1", state.Buttons);
         Assert.Equal(1, state.RightTrigger);
+    }
+
+    [Fact]
+    public void Trigger_presets_use_documented_firmware_modes()
+    {
+        Assert.Equal(0x01, DualSenseTriggerEffect.Build(new() { Preset = TriggerPreset.SoftResistance })[0]);
+        Assert.Equal(0x02, DualSenseTriggerEffect.Build(new() { Preset = TriggerPreset.HardStop })[0]);
+        Assert.Equal(0x06, DualSenseTriggerEffect.Build(new() { Preset = TriggerPreset.Pulse })[0]);
+        Assert.Equal(0x05, DualSenseTriggerEffect.Build(new() { Preset = TriggerPreset.Off })[0]);
+    }
+
+    [Fact]
+    public void Usb_output_report_contains_audio_and_effect_tuning()
+    {
+        var report = DualSenseOutputReport.BuildUsb(new()
+        {
+            Audio = new() { HeadphoneVolume = 1, SpeakerVolume = 2, MicrophoneVolume = 3, RouteToInternalSpeaker = true, AudioMuted = true, SpeakerPreampGain = 5 },
+            MicrophoneLed = MicrophoneLedMode.Pulse, EffectPowerReduction = 6, LedBrightness = 2, LightbarSetup = 2
+        });
+        Assert.Equal(new byte[] { 1, 2, 3, 0x20, 2, 0x40 }, report[5..11]);
+        Assert.Equal(0x66, report[37]);
+        Assert.Equal(5, report[38]);
+        Assert.Equal(3, report[39]);
+        Assert.Equal(2, report[42]);
+        Assert.Equal(2, report[43]);
+    }
+
+    [Fact]
+    public void Bluetooth_extended_parser_validates_crc()
+    {
+        var report = new byte[78];
+        report[0] = 0x31;
+        report[2] = 0x80; report[3] = 0x80; report[4] = 0x80; report[5] = 0x80;
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(report.AsSpan(74),
+            DualSenseOutputReport.ComputeBluetoothInputCrc(report.AsSpan(0, 74)));
+        Assert.Equal(0, DualSenseBluetoothReportParser.Parse(report).LeftStick.X);
+        report[10] ^= 1;
+        Assert.Throws<InvalidDataException>(() => DualSenseBluetoothReportParser.Parse(report));
     }
 
     [Theory]

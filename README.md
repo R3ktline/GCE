@@ -42,7 +42,8 @@ dotnet test .\DualSenseLab.sln
 - Software mapping controls for deadzone, anti-deadzone, and smoothing
 - Live stick, button, motion-sensor, trigger, and touchpad visualization
 - Locally persisted profile create, rename, duplicate, import, export, delete, and per-game auto-apply operations
-- Physical light-bar, player LED, microphone LED/mute, and vibration controls
+- Physical light-bar, player LED, microphone LED/mute, vibration, audio routing,
+  audio volume, LED brightness, and effect-power controls
 - Redacted compatibility diagnostics export
 - Opt-in ViGEmBus virtual Xbox 360 output with explicit sticks, triggers, and buttons
 
@@ -57,6 +58,10 @@ dotnet test .\DualSenseLab.sln
 Physical HID access stays behind the `IControllerDevice` interface. USB and
 Bluetooth use their distinct report structures, including Bluetooth output
 sequence tags and CRC32 framing.
+
+Motion values are normalized with each controller's calibration feature report.
+Pairing identity and firmware, hardware, and feature versions are read from the
+controller when available.
 
 ## Important limitations
 

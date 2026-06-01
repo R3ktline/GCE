@@ -42,8 +42,12 @@ Raw HID output packet assembly follows the maintained references below:
 - USB and Bluetooth input reports are parsed independently.
 - USB and Bluetooth output reports are assembled independently.
 - Bluetooth output uses the Sony/Linux-compatible CRC32 seed and framing.
+- Bluetooth extended input reports are rejected when CRC32 validation fails.
 - Device discovery targets Sony VID `0x054C` and DualSense PID `0x0CE6`.
-- HID stream reconnects retry after transient read failures.
+- HID stream reconnects rediscover USB or Bluetooth endpoints after transient
+  failures and transport changes.
+- Controller calibration feature report `0x05`, pairing report `0x09`, and
+  firmware report `0x20` are consumed when available.
 
 ## Safety rules
 

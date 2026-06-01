@@ -63,7 +63,7 @@ public partial class MainWindow : Window
         DashboardRightStick.Text = FormatStick(state.RightStick);
         DashboardButtons.Text = state.Buttons.Count == 0 ? "None" : string.Join(", ", state.Buttons);
         ButtonTesterText.Text = DashboardButtons.Text;
-        MotionText.Text = $"Gyroscope   X {state.Gyroscope.X,6:F2}   Y {state.Gyroscope.Y,6:F2}   Z {state.GyroscopeZ,6:F2}\nAccelerometer   X {state.Accelerometer.X,5:F2}   Y {state.Accelerometer.Y,5:F2}   Z {state.AccelerometerZ,5:F2}\nTriggers   L2 {state.LeftTrigger:P0}   R2 {state.RightTrigger:P0}";
+        MotionText.Text = $"Gyroscope   X {state.Gyroscope.X,6:F2}   Y {state.Gyroscope.Y,6:F2}   Z {state.GyroscopeZ,6:F2}\nAccelerometer   X {state.Accelerometer.X,5:F2}   Y {state.Accelerometer.Y,5:F2}   Z {state.AccelerometerZ,5:F2}\nTriggers   L2 {state.LeftTrigger:P0}   R2 {state.RightTrigger:P0}\nHeadset {(state.HeadsetConnected ? "connected" : "disconnected")}   Microphone {(state.MicrophoneConnected ? "connected" : "disconnected")}   Muted {(state.MicrophoneMuted ? "yes" : "no")}";
         TouchX.Value = state.Touchpad.X; TouchY.Value = state.Touchpad.Y;
         if (state.BatteryPercent is int battery)
         {
@@ -290,13 +290,32 @@ public partial class MainWindow : Window
     private void MicrophoneLed_Changed(object sender, RoutedEventArgs e)
     {
         if (!_uiReady) return;
-        _controller.SetMicrophoneLed(MicrophoneLedEnabled.IsChecked == true);
+        _controller.SetMicrophoneLed(MicrophoneLedPulse.IsChecked == true ? MicrophoneLedMode.Pulse :
+            MicrophoneLedEnabled.IsChecked == true ? MicrophoneLedMode.On : MicrophoneLedMode.Off);
     }
 
     private void MicrophoneMute_Changed(object sender, RoutedEventArgs e)
     {
         if (!_uiReady) return;
         _controller.SetMicrophoneMuted(MicrophoneMuted.IsChecked == true);
+    }
+
+    private void ApplyHardwareTuning_Click(object sender, RoutedEventArgs e)
+    {
+        _controller.SetAudio(new ControllerAudioConfiguration
+        {
+            HeadphoneVolume = (byte)HeadphoneVolumeSlider.Value,
+            SpeakerVolume = (byte)SpeakerVolumeSlider.Value,
+            MicrophoneVolume = (byte)MicrophoneVolumeSlider.Value,
+            RouteToInternalSpeaker = RouteInternalSpeaker.IsChecked == true,
+            ForceInternalMicrophone = ForceInternalMicrophone.IsChecked == true,
+            ForceHeadsetMicrophone = ForceHeadsetMicrophone.IsChecked == true,
+            AudioMuted = AudioMuted.IsChecked == true,
+            SpeakerPreampGain = (byte)SpeakerPreampSlider.Value
+        });
+        _controller.SetLedBrightness((byte)LedBrightnessSlider.Value);
+        _controller.SetEffectPowerReduction((byte)EffectPowerReductionSlider.Value);
+        _controller.SetLightBarSetup(FadeLightBar.IsChecked == true);
     }
 
     private void VirtualController_ValueChanged(object sender, RoutedEventArgs e) => ApplyVirtualControllerConfiguration();

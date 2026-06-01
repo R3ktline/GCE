@@ -39,8 +39,12 @@ public interface IControllerDevice : IDisposable
     void TestVibration(int strength);
     void SetLightBar(string hexColor);
     void SetPlayerLeds(byte leds);
-    void SetMicrophoneLed(bool enabled);
+    void SetMicrophoneLed(MicrophoneLedMode mode);
     void SetMicrophoneMuted(bool muted);
+    void SetAudio(ControllerAudioConfiguration configuration);
+    void SetLedBrightness(byte brightness);
+    void SetEffectPowerReduction(byte reduction);
+    void SetLightBarSetup(bool fadeOut);
 }
 
 public sealed class SimulatedControllerDevice : IControllerDevice
@@ -76,7 +80,7 @@ public sealed class SimulatedControllerDevice : IControllerDevice
 
     public void TestVibration(int strength)
     {
-        if (strength is < 0 or > 60) throw new ArgumentOutOfRangeException(nameof(strength), "Conservative test strength must be between 0 and 60.");
+        if (strength is < 0 or > 100) throw new ArgumentOutOfRangeException(nameof(strength), "Test strength must be between 0 and 100.");
     }
 
     public void SetLightBar(string hexColor)
@@ -85,8 +89,12 @@ public sealed class SimulatedControllerDevice : IControllerDevice
             throw new ArgumentException("Use a six-digit hex color such as #6C63FF.", nameof(hexColor));
     }
     public void SetPlayerLeds(byte leds) { }
-    public void SetMicrophoneLed(bool enabled) { }
+    public void SetMicrophoneLed(MicrophoneLedMode mode) { }
     public void SetMicrophoneMuted(bool muted) { }
+    public void SetAudio(ControllerAudioConfiguration configuration) { }
+    public void SetLedBrightness(byte brightness) { }
+    public void SetEffectPowerReduction(byte reduction) { }
+    public void SetLightBarSetup(bool fadeOut) { }
 
     private void PublishFrame()
     {
@@ -121,9 +129,10 @@ public static class ControllerDeviceFactory
 
 public sealed class DualSenseUsbControllerDevice : IControllerDevice
 {
-    private readonly HidDevice _device;
+    private HidDevice _device;
     private HidStream _stream;
     private readonly byte[] _buffer;
+    private DualSenseMotionCalibration _calibration;
     private readonly DualSenseOutputState _output = new();
     private readonly object _outputLock = new();
     private CancellationTokenSource? _cancellation;
@@ -136,11 +145,13 @@ public sealed class DualSenseUsbControllerDevice : IControllerDevice
         _device = device;
         if (!device.TryOpen(out _stream)) throw new IOException("The DualSense HID interface could not be opened.");
         _stream.ReadTimeout = 250;
-        _buffer = new byte[device.GetMaxInputReportLength()];
+        _buffer = new byte[78];
+        _calibration = ReadCalibration(_stream);
         var connection = device.DevicePath.Contains("mi_03", StringComparison.OrdinalIgnoreCase)
             ? ConnectionType.Usb : ConnectionType.Bluetooth;
+        var identity = ReadIdentity(_stream);
         Info = new(
-            "DualSense Wireless Controller", device.DevicePath, connection, null,
+            "DualSense Wireless Controller", identity ?? device.DevicePath, connection, null,
             ReadFirmware(_stream), true, $"{connection} HID input and physical effects are enabled.");
     }
 
@@ -234,9 +245,9 @@ public sealed class DualSenseUsbControllerDevice : IControllerDevice
         lock (_outputLock) { _output.PlayerLeds = (byte)(leds & 0x1F); WriteOutput(); }
     }
 
-    public void SetMicrophoneLed(bool enabled)
+    public void SetMicrophoneLed(MicrophoneLedMode mode)
     {
-        lock (_outputLock) { _output.MicrophoneLed = enabled; WriteOutput(); }
+        lock (_outputLock) { _output.MicrophoneLed = mode; WriteOutput(); }
     }
 
     public void SetMicrophoneMuted(bool muted)
@@ -244,9 +255,33 @@ public sealed class DualSenseUsbControllerDevice : IControllerDevice
         lock (_outputLock) { _output.MicrophoneMuted = muted; WriteOutput(); }
     }
 
+    public void SetAudio(ControllerAudioConfiguration configuration)
+    {
+        lock (_outputLock)
+        {
+            _output.Audio = configuration;
+            WriteOutput();
+        }
+    }
+
+    public void SetLedBrightness(byte brightness)
+    {
+        lock (_outputLock) { _output.LedBrightness = (byte)Math.Clamp(brightness, (byte)0, (byte)2); WriteOutput(); }
+    }
+
+    public void SetEffectPowerReduction(byte reduction)
+    {
+        lock (_outputLock) { _output.EffectPowerReduction = (byte)Math.Clamp(reduction, (byte)0, (byte)7); WriteOutput(); }
+    }
+
+    public void SetLightBarSetup(bool fadeOut)
+    {
+        lock (_outputLock) { _output.LightbarSetup = fadeOut ? (byte)0x02 : (byte)0x00; WriteOutput(); }
+    }
+
     private void WriteOutput()
     {
-        var report = Info.Connection == ConnectionType.Bluetooth
+        var report = IsBluetooth(_device)
             ? DualSenseOutputReport.BuildBluetooth(_output, _outputSequence++)
             : DualSenseOutputReport.BuildUsb(_output);
         try
@@ -270,9 +305,9 @@ public sealed class DualSenseUsbControllerDevice : IControllerDevice
                 if (length > 0)
                 {
                     FramesRead++;
-                    InputReceived?.Invoke(this, Info.Connection == ConnectionType.Bluetooth
-                        ? DualSenseBluetoothReportParser.Parse(_buffer.AsSpan(0, length))
-                        : DualSenseUsbReportParser.Parse(_buffer.AsSpan(0, length)));
+                    InputReceived?.Invoke(this, IsBluetooth(_device)
+                        ? DualSenseBluetoothReportParser.Parse(_buffer.AsSpan(0, length), _calibration)
+                        : DualSenseUsbReportParser.Parse(_buffer.AsSpan(0, length), _calibration));
                 }
             }
             catch (TimeoutException) { }
@@ -291,10 +326,15 @@ public sealed class DualSenseUsbControllerDevice : IControllerDevice
         catch { }
         while (!cancellation.IsCancellationRequested)
         {
-            if (_device.TryOpen(out var stream))
+            var device = DeviceList.Local.GetHidDevices(0x054C, 0x0CE6)
+                .OrderBy(candidate => candidate.DevicePath.Contains("mi_03", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+                .FirstOrDefault();
+            if (device is not null && device.TryOpen(out var stream))
             {
                 stream.ReadTimeout = 250;
+                _device = device;
                 _stream = stream;
+                _calibration = ReadCalibration(stream);
                 return true;
             }
             if (cancellation == CancellationToken.None) return false;
@@ -310,13 +350,43 @@ public sealed class DualSenseUsbControllerDevice : IControllerDevice
             var report = new byte[64];
             report[0] = 0x20;
             stream.GetFeature(report);
-            return $"Firmware {report[24]}.{report[25]}.{report[26]}";
+            var hardware = System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(report.AsSpan(24));
+            var firmware = System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(report.AsSpan(28));
+            var features = System.Buffers.Binary.BinaryPrimitives.ReadUInt16LittleEndian(report.AsSpan(44));
+            return $"Firmware 0x{firmware:X8}; hardware 0x{hardware:X8}; features {features >> 8}.{features & 0xFF}";
         }
         catch
         {
             return "Firmware unavailable";
         }
     }
+
+    private static string? ReadIdentity(HidStream stream)
+    {
+        try
+        {
+            var report = new byte[64];
+            report[0] = 0x09;
+            stream.GetFeature(report);
+            return string.Join(":", report.Skip(1).Take(6).Reverse().Select(value => value.ToString("X2")));
+        }
+        catch { return null; }
+    }
+
+    private static DualSenseMotionCalibration ReadCalibration(HidStream stream)
+    {
+        try
+        {
+            var report = new byte[64];
+            report[0] = 0x05;
+            stream.GetFeature(report);
+            return DualSenseMotionCalibration.Parse(report);
+        }
+        catch { return DualSenseMotionCalibration.Identity; }
+    }
+
+    private static bool IsBluetooth(HidDevice device) =>
+        !device.DevicePath.Contains("mi_03", StringComparison.OrdinalIgnoreCase);
 }
 
 public sealed class DualSenseOutputState
@@ -325,8 +395,12 @@ public sealed class DualSenseOutputState
     public byte LeftMotor { get; set; }
     public byte[] RightTrigger { get; set; } = DualSenseTriggerEffect.Off();
     public byte[] LeftTrigger { get; set; } = DualSenseTriggerEffect.Off();
-    public bool MicrophoneLed { get; set; }
+    public MicrophoneLedMode MicrophoneLed { get; set; }
     public bool MicrophoneMuted { get; set; }
+    public ControllerAudioConfiguration Audio { get; set; } = new();
+    public byte LedBrightness { get; set; }
+    public byte EffectPowerReduction { get; set; }
+    public byte LightbarSetup { get; set; }
     public byte PlayerLeds { get; set; } = 0x04;
     public byte LightbarRed { get; set; } = 0x6C;
     public byte LightbarGreen { get; set; } = 0x63;
@@ -339,14 +413,25 @@ public static class DualSenseOutputReport
     {
         var report = new byte[48];
         report[0] = 0x02;
-        report[1] = 0x0F; // compatible vibration and both adaptive triggers
-        report[2] = 0x17; // microphone LED/mute, light bar, and player LEDs
+        report[1] = 0xEF; // rumble, adaptive triggers, and audio controls
+        report[2] = 0x57; // mic, audio mute, light bar, player LEDs, and effect power
         report[3] = state.RightMotor;
         report[4] = state.LeftMotor;
-        report[9] = state.MicrophoneLed ? (byte)0x01 : (byte)0x00;
-        report[10] = state.MicrophoneMuted ? (byte)0x10 : (byte)0x00;
+        report[5] = state.Audio.HeadphoneVolume;
+        report[6] = state.Audio.SpeakerVolume;
+        report[7] = state.Audio.MicrophoneVolume;
+        report[8] = (byte)((state.Audio.ForceInternalMicrophone ? 0x01 : 0) |
+            (state.Audio.ForceHeadsetMicrophone ? 0x02 : 0) |
+            (state.Audio.RouteToInternalSpeaker ? 0x20 : 0));
+        report[9] = (byte)state.MicrophoneLed;
+        report[10] = (byte)((state.MicrophoneMuted ? 0x10 : 0) | (state.Audio.AudioMuted ? 0x40 : 0));
         state.RightTrigger.CopyTo(report, 11);
         state.LeftTrigger.CopyTo(report, 22);
+        report[37] = (byte)((state.EffectPowerReduction << 4) | state.EffectPowerReduction);
+        report[38] = state.Audio.SpeakerPreampGain;
+        report[39] = (byte)(0x01 | (state.LightbarSetup != 0 ? 0x02 : 0));
+        report[42] = state.LightbarSetup;
+        report[43] = state.LedBrightness;
         report[44] = state.PlayerLeds;
         report[45] = state.LightbarRed;
         report[46] = state.LightbarGreen;
@@ -370,6 +455,13 @@ public static class DualSenseOutputReport
     public static uint ComputeBluetoothCrc(ReadOnlySpan<byte> reportWithoutCrc)
     {
         var crc = UpdateCrc(uint.MaxValue, 0xA2);
+        foreach (var value in reportWithoutCrc) crc = UpdateCrc(crc, value);
+        return ~crc;
+    }
+
+    public static uint ComputeBluetoothInputCrc(ReadOnlySpan<byte> reportWithoutCrc)
+    {
+        var crc = UpdateCrc(uint.MaxValue, 0xA1);
         foreach (var value in reportWithoutCrc) crc = UpdateCrc(crc, value);
         return ~crc;
     }
@@ -398,64 +490,100 @@ public static class DualSenseTriggerEffect
     public static byte[] Build(TriggerConfiguration configuration)
     {
         if (configuration.Preset == TriggerPreset.Off || configuration.Strength == 0) return Off();
-        var start = (byte)Math.Clamp((int)Math.Round(configuration.StartPosition / 100d * 9), 0, 9);
-        var end = (byte)Math.Clamp((int)Math.Round(configuration.EndPosition / 100d * 9), 0, 9);
-        var strength = (byte)Math.Clamp((int)Math.Round(configuration.Strength / 100d * 8), 1, 8);
+        var start = ToActuatorPosition(configuration.StartPosition);
+        var end = ToActuatorPosition(configuration.EndPosition);
+        var strength = (byte)Math.Clamp((int)Math.Round(configuration.Strength / 100d * 255), 1, 255);
         return configuration.Preset switch
         {
-            TriggerPreset.HardStop or TriggerPreset.WeaponBreakpoint => Weapon(
-                (byte)Math.Clamp((int)start, 2, 7), (byte)Math.Clamp(Math.Max((int)end, start + 1), 3, 8), strength),
-            TriggerPreset.Pulse => Vibration(start, strength, 35),
-            _ => Feedback(start, strength)
+            TriggerPreset.SoftResistance => UniformResistance(start, strength),
+            TriggerPreset.Pulse => Vibration(35, (byte)Math.Clamp(configuration.Strength * 63 / 100, 1, 63), start),
+            _ => ResistanceSection(start, end, strength)
         };
     }
 
     public static byte[] Off() => new byte[11] { 0x05, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-    public static byte[] Feedback(byte position, byte strength)
+    public static byte[] UniformResistance(byte start, byte strength) =>
+        new byte[11] { 0x01, start, strength, 0, 0, 0, 0, 0, 0, 0, 0 };
+
+    public static byte[] ResistanceSection(byte start, byte end, byte strength) =>
+        new byte[11] { 0x02, start, end, strength, 0, 0, 0, 0, 0, 0, 0 };
+
+    public static byte[] Vibration(byte frequency, byte strength, byte start) =>
+        new byte[11] { 0x06, frequency, strength, start, 0, 0, 0, 0, 0, 0, 0 };
+
+    private static byte ToActuatorPosition(int percent) =>
+        (byte)Math.Clamp((int)Math.Round(percent / 100d * 238), 0, 238);
+}
+
+public sealed class DualSenseMotionCalibration
+{
+    private readonly AxisCalibration[] _gyro;
+    private readonly AxisCalibration[] _accelerometer;
+
+    private DualSenseMotionCalibration(AxisCalibration[] gyro, AxisCalibration[] accelerometer)
     {
-        if (position > 9 || strength is < 1 or > 8) throw new ArgumentOutOfRangeException();
-        uint forceZones = 0;
-        ushort activeZones = 0;
-        for (var zone = position; zone < 10; zone++)
-        {
-            forceZones |= (uint)((strength - 1) << (3 * zone));
-            activeZones |= (ushort)(1 << zone);
-        }
-        return new[] { (byte)0x21, (byte)activeZones, (byte)(activeZones >> 8), (byte)forceZones,
-            (byte)(forceZones >> 8), (byte)(forceZones >> 16), (byte)(forceZones >> 24), (byte)0, (byte)0, (byte)0, (byte)0 };
+        _gyro = gyro;
+        _accelerometer = accelerometer;
     }
 
-    public static byte[] Weapon(byte start, byte end, byte strength)
+    public static DualSenseMotionCalibration Identity { get; } = new(
+        Enumerable.Repeat(new AxisCalibration(0, 1, 1), 3).ToArray(),
+        Enumerable.Repeat(new AxisCalibration(0, 1, 1), 3).ToArray());
+
+    public static DualSenseMotionCalibration Parse(byte[] report)
     {
-        if (start is < 2 or > 7 || end <= start || end > 8 || strength is < 1 or > 8)
-            throw new ArgumentOutOfRangeException();
-        var zones = (ushort)((1 << start) | (1 << end));
-        return new[] { (byte)0x25, (byte)zones, (byte)(zones >> 8), (byte)(strength - 1), (byte)0, (byte)0,
-            (byte)0, (byte)0, (byte)0, (byte)0, (byte)0 };
+        if (report.Length < 35 || report[0] != 0x05)
+            throw new InvalidDataException("Expected a DualSense calibration feature report with ID 0x05.");
+        var values = Enumerable.Range(0, 17).Select(index => ReadInt16(report, 1 + index * 2)).ToArray();
+        var speed2x = values[9] + values[10];
+        var gyro = new[]
+        {
+            CreateGyro(values[0], values[3], values[4], speed2x),
+            CreateGyro(values[1], values[5], values[6], speed2x),
+            CreateGyro(values[2], values[7], values[8], speed2x)
+        };
+        var accelerometer = new[]
+        {
+            CreateAccelerometer(values[11], values[12]),
+            CreateAccelerometer(values[13], values[14]),
+            CreateAccelerometer(values[15], values[16])
+        };
+        return new(gyro, accelerometer);
     }
 
-    public static byte[] Vibration(byte position, byte amplitude, byte frequency)
+    public double Gyro(int axis, short raw) => _gyro[axis].Apply(raw);
+    public double Accelerometer(int axis, short raw) => _accelerometer[axis].Apply(raw);
+
+    private static AxisCalibration CreateGyro(short bias, short plus, short minus, int speed2x) =>
+        Create(0, speed2x * 1024, Math.Abs(plus - bias) + Math.Abs(minus - bias));
+
+    private static AxisCalibration CreateAccelerometer(short plus, short minus)
     {
-        if (position > 9 || amplitude is < 1 or > 8 || frequency == 0) throw new ArgumentOutOfRangeException();
-        uint amplitudeZones = 0;
-        ushort activeZones = 0;
-        for (var zone = position; zone < 10; zone++)
-        {
-            amplitudeZones |= (uint)((amplitude - 1) << (3 * zone));
-            activeZones |= (ushort)(1 << zone);
-        }
-        return new[] { (byte)0x26, (byte)activeZones, (byte)(activeZones >> 8), (byte)amplitudeZones,
-            (byte)(amplitudeZones >> 8), (byte)(amplitudeZones >> 16), (byte)(amplitudeZones >> 24),
-            (byte)0, (byte)0, frequency, (byte)0 };
+        var range2g = plus - minus;
+        return Create(plus - range2g / 2, 2 * 8192, range2g);
+    }
+
+    private static AxisCalibration Create(int bias, int numerator, int denominator) =>
+        denominator == 0 ? new(0, 1, 1) : new(bias, numerator, denominator);
+
+    private static short ReadInt16(byte[] report, int offset) =>
+        System.Buffers.Binary.BinaryPrimitives.ReadInt16LittleEndian(report.AsSpan(offset, 2));
+
+    private sealed record AxisCalibration(int Bias, int Numerator, int Denominator)
+    {
+        public double Apply(short raw) => Numerator * (raw - Bias) / (double)Denominator;
     }
 }
 
 public static class DualSenseUsbReportParser
 {
     public static InputState Parse(byte[] report) => Parse(report.AsSpan());
+    public static InputState Parse(byte[] report, DualSenseMotionCalibration calibration) => Parse(report.AsSpan(), calibration);
 
-    public static InputState Parse(ReadOnlySpan<byte> report)
+    public static InputState Parse(ReadOnlySpan<byte> report) => Parse(report, DualSenseMotionCalibration.Identity);
+
+    public static InputState Parse(ReadOnlySpan<byte> report, DualSenseMotionCalibration calibration)
     {
         if (report.Length < 54 || report[0] != 0x01)
             throw new InvalidDataException("Expected a DualSense USB input report with ID 0x01.");
@@ -469,11 +597,12 @@ public static class DualSenseUsbReportParser
             new StickPoint(ToAxis(report[1]), ToAxis(report[2], invert: true)),
             new StickPoint(ToAxis(report[3]), ToAxis(report[4], invert: true)),
             report[5] / 255d, report[6] / 255d, buttons,
-            new StickPoint(ReadInt16(report, 16), ReadInt16(report, 18)),
-            new StickPoint(ReadInt16(report, 22), ReadInt16(report, 24)),
+            new StickPoint(calibration.Gyro(0, ReadInt16(report, 16)), calibration.Gyro(1, ReadInt16(report, 18))),
+            new StickPoint(calibration.Accelerometer(0, ReadInt16(report, 22)), calibration.Accelerometer(1, ReadInt16(report, 24))),
             touchpad, DateTimeOffset.UtcNow, Math.Min((report[53] & 0x0F) * 10 + 5, 100), touchActive,
-            ReadInt16(report, 20), ReadInt16(report, 26), secondaryTouchpad, secondaryTouchActive,
-            (report[53] & 0xF0) != 0);
+            calibration.Gyro(2, ReadInt16(report, 20)), calibration.Accelerometer(2, ReadInt16(report, 26)),
+            secondaryTouchpad, secondaryTouchActive, (report[53] & 0xF0) != 0,
+            (report[54] & 0x01) != 0, (report[54] & 0x02) != 0, (report[54] & 0x04) != 0);
     }
 
     private static short ReadInt16(ReadOnlySpan<byte> report, int offset) =>
@@ -520,15 +649,21 @@ public static class DualSenseUsbReportParser
 public static class DualSenseBluetoothReportParser
 {
     public static InputState Parse(byte[] report) => Parse(report.AsSpan());
+    public static InputState Parse(byte[] report, DualSenseMotionCalibration calibration) => Parse(report.AsSpan(), calibration);
 
-    public static InputState Parse(ReadOnlySpan<byte> report)
+    public static InputState Parse(ReadOnlySpan<byte> report) => Parse(report, DualSenseMotionCalibration.Identity);
+
+    public static InputState Parse(ReadOnlySpan<byte> report, DualSenseMotionCalibration calibration)
     {
         if (report.Length >= 78 && report[0] == 0x31)
         {
+            var expectedCrc = System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(report.Slice(74, 4));
+            if (DualSenseOutputReport.ComputeBluetoothInputCrc(report.Slice(0, 74)) != expectedCrc)
+                throw new InvalidDataException("DualSense Bluetooth input CRC validation failed.");
             var usbLayout = new byte[64];
             usbLayout[0] = 0x01;
             report.Slice(2, 63).CopyTo(usbLayout.AsSpan(1));
-            return DualSenseUsbReportParser.Parse(usbLayout);
+            return DualSenseUsbReportParser.Parse(usbLayout, calibration);
         }
         if (report.Length < 10 || report[0] != 0x01)
             throw new InvalidDataException("Expected a DualSense Bluetooth input report.");
