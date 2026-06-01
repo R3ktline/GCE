@@ -2,16 +2,26 @@
 
 Great Controller Emulator (`GCE`) is a dark Windows desktop utility MVP for experimenting with Sony
 DualSense controller diagnostics, adaptive-trigger profiles, and software stick
-drift mitigation. The current build is simulator-first: it is useful without
-hardware and does not send unverified HID packets to a physical controller.
+drift mitigation. The current build reads a connected USB or Bluetooth DualSense when one is
+available, falls back to manual simulation, and does not send unverified HID
+packets to a physical controller.
 
 ## Requirements
 
 - Windows 10 or later
 - .NET 7 SDK to build
-- .NET Desktop Runtime 7 to run
+- .NET Desktop Runtime 7 to run from source; the published `dist` build is self-contained
+- [ViGEmBus](https://github.com/nefarius/ViGEmBus/releases) for opt-in virtual Xbox 360 controller output
 
 ## Run
+
+Launch the self-contained Windows build:
+
+```powershell
+.\dist\GCE-win-x64\GCE.exe
+```
+
+Or run from source:
 
 ```powershell
 dotnet run --project .\src\DualSenseLab.App\DualSenseLab.App.csproj
@@ -26,37 +36,37 @@ dotnet test .\DualSenseLab.sln
 
 ## Included workflows
 
-- Dashboard with connection metadata and live simulator input
-- Independent left and right adaptive-trigger editor with validation and reset
+- Dashboard with connection metadata and live physical or simulator input
+- Independent left and right physical adaptive-trigger editor with validation and reset
 - Timed stick-center calibration with drift score and confidence
 - Software mapping controls for deadzone, anti-deadzone, and smoothing
 - Live stick, button, motion-sensor, trigger, and touchpad visualization
-- Profile create, rename, duplicate, import, export, and delete operations
-- Light-bar and conservative vibration tests against the simulator
+- Locally persisted profile create, rename, duplicate, import, export, delete, and per-game auto-apply operations
+- Physical light-bar, player LED, microphone LED/mute, and vibration controls
 - Redacted compatibility diagnostics export
+- Opt-in ViGEmBus virtual Xbox 360 output with explicit sticks, triggers, and buttons
 
 ## Supported connection modes
 
 | Mode | Input | Adaptive triggers | Light bar | Vibration |
 | --- | --- | --- | --- | --- |
 | Simulator | Yes | Yes, simulated | Yes, simulated | Yes, simulated |
-| USB physical controller | Not yet enabled | Not yet enabled | Not yet enabled | Not yet enabled |
-| Bluetooth physical controller | Not yet enabled | Not yet enabled | Not yet enabled | Not yet enabled |
+| USB physical controller | Yes | Yes | Yes | Yes |
+| Bluetooth physical controller | Yes | Yes | Yes | Yes |
 
-Physical HID access is intentionally left behind the `IControllerDevice`
-interface. USB and Bluetooth use different report structures. The application
-will not guess packet formats or imply that output support is universal.
+Physical HID access stays behind the `IControllerDevice` interface. USB and
+Bluetooth use their distinct report structures, including Bluetooth output
+sequence tags and CRC32 framing.
 
 ## Important limitations
 
 - Drift correction is software mapping only. It does not physically repair a
-  controller and games do not receive the mapped output in this MVP.
-- Virtual-controller output is disabled. A future implementation would require
-  an explicit, user-approved dependency such as ViGEmBus.
-- Per-game executable assignments are stored in profiles, but background
-  process monitoring is not enabled yet.
-- Firmware discovery, player LEDs, and physical reconnect handling belong in a
-  future verified HID adapter.
+  controller.
+- Virtual-controller output requires ViGEmBus. GCE never installs or enables
+  the driver automatically.
+- The ViGEm Xbox 360 output path is separate from physical DualSense HID
+  effects.
+- Profiles are stored under `%LOCALAPPDATA%\GreatControllerEmulator\profiles.json`.
 
 ## Troubleshooting
 

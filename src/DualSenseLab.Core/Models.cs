@@ -26,7 +26,36 @@ public sealed record InputState(
     StickPoint Gyroscope,
     StickPoint Accelerometer,
     StickPoint Touchpad,
-    DateTimeOffset Timestamp);
+    DateTimeOffset Timestamp,
+    int? BatteryPercent = null,
+    bool TouchpadActive = false,
+    double GyroscopeZ = 0,
+    double AccelerometerZ = 0,
+    StickPoint? SecondaryTouchpad = null,
+    bool SecondaryTouchpadActive = false,
+    bool BatteryCharging = false);
+
+public sealed class VirtualControllerConfiguration
+{
+    public double LeftStickX { get; set; }
+    public double LeftStickY { get; set; }
+    public double RightStickX { get; set; }
+    public double RightStickY { get; set; }
+    public double LeftTrigger { get; set; }
+    public double RightTrigger { get; set; }
+    public HashSet<string> Buttons { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    public InputState ToInputState() => new(
+        new StickPoint(LeftStickX, LeftStickY),
+        new StickPoint(RightStickX, RightStickY),
+        LeftTrigger,
+        RightTrigger,
+        new HashSet<string>(Buttons, StringComparer.OrdinalIgnoreCase),
+        new StickPoint(0, 0),
+        new StickPoint(0, 0),
+        new StickPoint(.5, .5),
+        DateTimeOffset.UtcNow);
+}
 
 public sealed class TriggerConfiguration
 {
@@ -58,6 +87,7 @@ public sealed class ControllerProfile
     public int VibrationStrength { get; set; } = 20;
     public string AssignedExecutable { get; set; } = "";
     public bool AutoApply { get; set; }
+    public VirtualControllerConfiguration VirtualController { get; set; } = new();
 
     public static ControllerProfile SafeDefault() => new();
 }

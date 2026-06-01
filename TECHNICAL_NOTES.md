@@ -6,18 +6,22 @@ avoid unnecessary namespace churn. The shipped desktop executable is `GCE.exe`.
 ## Architecture
 
 - `DualSenseLab.App`: WPF desktop interface and workflow orchestration.
-- `DualSenseLab.Core`: controller interface, simulator, models, validation,
-  calibration analysis, mapping curves, serialization, and redacted export.
+- `DualSenseLab.Core`: controller interface, USB/Bluetooth DualSense HID
+  adapter, neutral manual simulator, ViGEm Xbox 360 output adapter, models,
+  validation, calibration analysis, mapping curves, serialization, and
+  redacted export.
 - `DualSenseLab.Tests`: unit and simulator integration coverage.
 
-`IControllerDevice` is the hardware boundary. The WPF app depends on the
-interface and currently creates `SimulatedControllerDevice`. A future physical
-adapter can be added without moving packet assembly into UI code.
+`IControllerDevice` is the physical-hardware boundary. The WPF app currently
+prefers `DualSenseUsbControllerDevice` when a DualSense HID interface is available
+and falls back to `SimulatedControllerDevice`, which publishes explicit
+user-selected state and never generates random input. `IVirtualControllerOutput`
+is a separate game-facing boundary implemented by `ViGEmXbox360Output`.
+Physical DualSense output packet assembly remains isolated from UI code.
 
 ## Protocol references
 
-No raw HID output packet assembly is implemented in this MVP. These references
-were reviewed to establish the constraints for a future adapter:
+Raw HID output packet assembly follows the maintained references below:
 
 - Sony product overview:
   <https://www.playstation.com/en-us/accessories/dualsense-wireless-controller/>
@@ -33,17 +37,13 @@ were reviewed to establish the constraints for a future adapter:
   virtual-controller driver requirements:
   <https://github.com/ds4windowsapp/DS4Windows>
 
-## Hardware implementation checklist
+## Hardware implementation notes
 
-Before physical writes are enabled:
-
-1. Parse USB and Bluetooth input reports independently.
-2. Assemble USB and Bluetooth output reports independently.
-3. Confirm CRC handling and transport behavior from a maintained implementation.
-4. Add device discovery for Sony VID `0x054C` and DualSense PID `0x0CE6`.
-5. Add reconnect tests, unsupported-feature reporting, and redacted logging.
-6. Test reset-effect packets on USB hardware before exposing live effects.
-7. Keep Bluetooth output opt-in until verified against supported Windows stacks.
+- USB and Bluetooth input reports are parsed independently.
+- USB and Bluetooth output reports are assembled independently.
+- Bluetooth output uses the Sony/Linux-compatible CRC32 seed and framing.
+- Device discovery targets Sony VID `0x054C` and DualSense PID `0x0CE6`.
+- HID stream reconnects retry after transient read failures.
 
 ## Safety rules
 

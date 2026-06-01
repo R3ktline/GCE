@@ -40,8 +40,8 @@
             <DockPanel Margin="16">
                 <StackPanel DockPanel.Dock="Bottom">
                     <Border Background="#1A2030" CornerRadius="8" Padding="12" Margin="0,0,0,10">
-                        <StackPanel><TextBlock Text="SIMULATOR ACTIVE" Foreground="#55D6A5" FontWeight="SemiBold" FontSize="11"/>
-                            <TextBlock Text="No physical HID writes" Style="{StaticResource Caption}" Margin="0,4,0,0"/></StackPanel>
+                        <StackPanel><TextBlock x:Name="SideInputTitle" Text="INPUT ACTIVE" Foreground="#55D6A5" FontWeight="SemiBold" FontSize="11"/>
+                            <TextBlock x:Name="SideInputNote" Text="ViGEm output is opt-in" Style="{StaticResource Caption}" Margin="0,4,0,0"/></StackPanel>
                     </Border>
                     <Button x:Name="ResetEffectsNavButton" Style="{StaticResource DangerButton}" Content="Reset Effects" Click="ResetEffects_Click" ToolTip="Immediately disables both adaptive trigger effects."/>
                 </StackPanel>
@@ -62,7 +62,7 @@
             <Border BorderBrush="#252B39" BorderThickness="0,0,0,1" Padding="26,0">
                 <Grid><TextBlock x:Name="PageTitle" Text="Dashboard" FontSize="22" FontWeight="SemiBold" VerticalAlignment="Center"/>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                        <Ellipse Fill="#55D6A5" Height="8" Width="8" Margin="0,0,8,0"/><TextBlock Text="DualSense Simulator connected" Foreground="#BCC4D5"/>
+                        <Ellipse Fill="#55D6A5" Height="8" Width="8" Margin="0,0,8,0"/><TextBlock x:Name="ConnectionHeaderText" Text="Controller connected" Foreground="#BCC4D5"/>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -72,9 +72,9 @@
                     <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel>
                         <TextBlock Text="Controller overview" FontSize="28" FontWeight="Light"/><TextBlock Text="Live status, connection capabilities, and a quick health snapshot." Style="{StaticResource Caption}" Margin="0,6,0,20"/>
                         <WrapPanel>
-                            <Border Style="{StaticResource Card}" Width="330"><StackPanel><TextBlock Text="CONNECTED CONTROLLER" Style="{StaticResource Caption}"/><TextBlock Text="DualSense Simulator" FontSize="20" Margin="0,10,0,6"/><TextBlock Text="SIM-054C-0CE6-DEMO" Foreground="#A99FFF"/><TextBlock Text="Simulator connection" Style="{StaticResource Caption}" Margin="0,12,0,0"/></StackPanel></Border>
-                            <Border Style="{StaticResource Card}" Width="230"><StackPanel><TextBlock Text="BATTERY" Style="{StaticResource Caption}"/><TextBlock Text="82%" FontSize="36" Margin="0,8,0,0"/><ProgressBar Value="82" Height="5" Margin="0,12,0,0" Foreground="#55D6A5"/></StackPanel></Border>
-                            <Border Style="{StaticResource Card}" Width="300"><StackPanel><TextBlock Text="OUTPUT SUPPORT" Style="{StaticResource Caption}"/><TextBlock Text="Safe simulation" FontSize="20" Margin="0,10,0,5"/><TextBlock Text="Physical USB output is not enabled in this MVP." Style="{StaticResource Caption}" TextWrapping="Wrap"/></StackPanel></Border>
+                            <Border Style="{StaticResource Card}" Width="330"><StackPanel><TextBlock Text="CONNECTED CONTROLLER" Style="{StaticResource Caption}"/><TextBlock x:Name="ConnectedControllerName" Text="Controller" FontSize="20" Margin="0,10,0,6"/><TextBlock x:Name="ConnectedControllerId" Text="Detecting..." Foreground="#A99FFF"/><TextBlock x:Name="ConnectionModeText" Text="Detecting connection" Style="{StaticResource Caption}" Margin="0,12,0,0"/></StackPanel></Border>
+                            <Border Style="{StaticResource Card}" Width="230"><StackPanel><TextBlock Text="BATTERY" Style="{StaticResource Caption}"/><TextBlock x:Name="BatteryText" Text="N/A" FontSize="36" Margin="0,8,0,0"/><ProgressBar x:Name="BatteryProgress" Value="0" Height="5" Margin="0,12,0,0" Foreground="#55D6A5"/></StackPanel></Border>
+                            <Border Style="{StaticResource Card}" Width="300"><StackPanel><TextBlock Text="OUTPUT SUPPORT" Style="{StaticResource Caption}"/><TextBlock x:Name="OutputSupportTitle" Text="Detecting..." FontSize="20" Margin="0,10,0,5"/><TextBlock x:Name="OutputSupportText" Text="Checking controller capabilities." Style="{StaticResource Caption}" TextWrapping="Wrap"/></StackPanel></Border>
                         </WrapPanel>
                         <TextBlock Text="Live input" Style="{StaticResource SectionTitle}" Margin="0,8,0,12"/>
                         <WrapPanel>
@@ -87,7 +87,7 @@
                 <TabItem>
                     <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel>
                         <TextBlock Text="Adaptive trigger editor" FontSize="28" FontWeight="Light"/><TextBlock Text="Configure each trigger independently. Values are validated before effects are applied." Style="{StaticResource Caption}" Margin="0,6,0,20"/>
-                        <Border Background="#2D2430" BorderBrush="#7A5361" BorderThickness="1" CornerRadius="8" Padding="14" Margin="0,0,0,16"><TextBlock Text="Safety note: effects are simulated in this build. USB HID writes remain disabled until a verified hardware adapter is installed."/></Border>
+                        <Border Background="#2D2430" BorderBrush="#7A5361" BorderThickness="1" CornerRadius="8" Padding="14" Margin="0,0,0,16"><TextBlock Text="Safety note: physical trigger effects are active on connected DualSense hardware. Use Reset Effects at any time to withdraw both trigger actuators."/></Border>
                         <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="18"/><ColumnDefinition/></Grid.ColumnDefinitions>
                             <Border Grid.Column="0" Style="{StaticResource Card}"><StackPanel><TextBlock Text="LEFT TRIGGER (L2)" Style="{StaticResource SectionTitle}"/><TextBlock Text="Preset" Style="{StaticResource Caption}"/><ComboBox x:Name="LeftPreset"/>
                                 <TextBlock Text="Resistance starts" Style="{StaticResource Caption}" Margin="0,9,0,0"/><Slider x:Name="LeftStart" Minimum="0" Maximum="99" Value="20" TickFrequency="5" ValueChanged="Slider_ValueChanged"/><TextBlock x:Name="LeftStartLabel" Text="20%"/>
@@ -108,15 +108,24 @@
                             <Border Style="{StaticResource Card}" Width="380"><StackPanel><TextBlock Text="DRIFT DETECTION WIZARD" Style="{StaticResource SectionTitle}"/><TextBlock Text="Leave the sticks untouched, then run a 4-second center sample." TextWrapping="Wrap" Foreground="#BCC4D5"/><Button x:Name="RunCalibrationButton" Style="{StaticResource PrimaryButton}" Content="Run center calibration" Margin="0,16,0,0" Click="RunCalibration_Click"/><TextBlock x:Name="CalibrationStatus" Text="Ready to sample" Foreground="#98A1B5" Margin="0,12,0,0" TextWrapping="Wrap"/></StackPanel></Border>
                             <Border Style="{StaticResource Card}" Width="380"><StackPanel><TextBlock Text="LAST REPORT" Style="{StaticResource SectionTitle}"/><TextBlock x:Name="CalibrationMetrics" Text="No calibration report yet." Foreground="#BCC4D5" TextWrapping="Wrap"/><Button Content="Export diagnostics report" Margin="0,16,0,0" Click="ExportDiagnostics_Click"/></StackPanel></Border>
                         </WrapPanel>
-                        <Border Style="{StaticResource Card}"><StackPanel><TextBlock Text="SOFTWARE MITIGATION" Style="{StaticResource SectionTitle}"/><TextBlock Text="Correction affects the app's mapped output only. Games will not see it unless a supported virtual-controller mode is added." Foreground="#E0B669" TextWrapping="Wrap" Margin="0,0,0,14"/>
-                            <TextBlock Text="Deadzone" Style="{StaticResource Caption}"/><Slider x:Name="DeadzoneSlider" Minimum="0" Maximum=".4" Value=".08" TickFrequency=".01" ValueChanged="Mitigation_ValueChanged"/><TextBlock x:Name="DeadzoneLabel" Text="8%"/>
-                            <TextBlock Text="Anti-deadzone" Style="{StaticResource Caption}" Margin="0,8,0,0"/><Slider x:Name="AntiDeadzoneSlider" Minimum="0" Maximum=".3" Value="0" TickFrequency=".01" ValueChanged="Mitigation_ValueChanged"/><TextBlock x:Name="AntiDeadzoneLabel" Text="0%"/>
-                            <TextBlock Text="Smoothing" Style="{StaticResource Caption}" Margin="0,8,0,0"/><Slider x:Name="SmoothingSlider" Minimum="0" Maximum=".6" Value=".12" TickFrequency=".01" ValueChanged="Mitigation_ValueChanged"/><TextBlock x:Name="SmoothingLabel" Text="12%"/></StackPanel></Border>
+                        <Border Style="{StaticResource Card}"><StackPanel><TextBlock Text="SOFTWARE MITIGATION" Style="{StaticResource SectionTitle}"/><TextBlock Text="Correction affects mapped output. Games receive it while ViGEm virtual-controller output is enabled." Foreground="#E0B669" TextWrapping="Wrap" Margin="0,0,0,14"/>
+                            <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="24"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0"><TextBlock Text="LEFT STICK" Style="{StaticResource SectionTitle}"/>
+                                    <TextBlock Text="Deadzone" Style="{StaticResource Caption}"/><Slider x:Name="DeadzoneSlider" Minimum="0" Maximum=".4" Value=".08" TickFrequency=".01" ValueChanged="Mitigation_ValueChanged"/><TextBlock x:Name="DeadzoneLabel" Text="8%"/>
+                                    <TextBlock Text="Anti-deadzone" Style="{StaticResource Caption}" Margin="0,8,0,0"/><Slider x:Name="AntiDeadzoneSlider" Minimum="0" Maximum=".3" Value="0" TickFrequency=".01" ValueChanged="Mitigation_ValueChanged"/><TextBlock x:Name="AntiDeadzoneLabel" Text="0%"/>
+                                    <TextBlock Text="Smoothing" Style="{StaticResource Caption}" Margin="0,8,0,0"/><Slider x:Name="SmoothingSlider" Minimum="0" Maximum=".6" Value=".12" TickFrequency=".01" ValueChanged="Mitigation_ValueChanged"/><TextBlock x:Name="SmoothingLabel" Text="12%"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2"><TextBlock Text="RIGHT STICK" Style="{StaticResource SectionTitle}"/>
+                                    <TextBlock Text="Deadzone" Style="{StaticResource Caption}"/><Slider x:Name="RightDeadzoneSlider" Minimum="0" Maximum=".4" Value=".08" TickFrequency=".01" ValueChanged="Mitigation_ValueChanged"/><TextBlock x:Name="RightDeadzoneLabel" Text="8%"/>
+                                    <TextBlock Text="Anti-deadzone" Style="{StaticResource Caption}" Margin="0,8,0,0"/><Slider x:Name="RightAntiDeadzoneSlider" Minimum="0" Maximum=".3" Value="0" TickFrequency=".01" ValueChanged="Mitigation_ValueChanged"/><TextBlock x:Name="RightAntiDeadzoneLabel" Text="0%"/>
+                                    <TextBlock Text="Smoothing" Style="{StaticResource Caption}" Margin="0,8,0,0"/><Slider x:Name="RightSmoothingSlider" Minimum="0" Maximum=".6" Value=".12" TickFrequency=".01" ValueChanged="Mitigation_ValueChanged"/><TextBlock x:Name="RightSmoothingLabel" Text="12%"/>
+                                </StackPanel>
+                            </Grid></StackPanel></Border>
                     </StackPanel></ScrollViewer>
                 </TabItem>
                 <TabItem>
                     <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel>
-                        <TextBlock Text="Input tester" FontSize="28" FontWeight="Light"/><TextBlock Text="Real-time simulator input for sticks, motion, touchpad, buttons, and triggers." Style="{StaticResource Caption}" Margin="0,6,0,20"/>
+                        <TextBlock Text="Input tester" FontSize="28" FontWeight="Light"/><TextBlock Text="Real-time input for sticks, buttons, triggers, motion sensors, and touchpad." Style="{StaticResource Caption}" Margin="0,6,0,20"/>
                         <WrapPanel>
                             <Border Style="{StaticResource Card}" Width="310"><StackPanel><TextBlock Text="LEFT STICK X / Y" Style="{StaticResource SectionTitle}"/><Canvas Width="250" Height="250" Background="#0F131D"><Line X1="125" X2="125" Y1="0" Y2="250" Stroke="#343C50"/><Line X1="0" X2="250" Y1="125" Y2="125" Stroke="#343C50"/><Ellipse x:Name="LeftDot" Width="14" Height="14" Fill="#7C6CFF"/></Canvas></StackPanel></Border>
                             <Border Style="{StaticResource Card}" Width="310"><StackPanel><TextBlock Text="RIGHT STICK X / Y" Style="{StaticResource SectionTitle}"/><Canvas Width="250" Height="250" Background="#0F131D"><Line X1="125" X2="125" Y1="0" Y2="250" Stroke="#343C50"/><Line X1="0" X2="250" Y1="125" Y2="125" Stroke="#343C50"/><Ellipse x:Name="RightDot" Width="14" Height="14" Fill="#55D6A5"/></Canvas></StackPanel></Border>
@@ -127,7 +136,7 @@
                 <TabItem>
                     <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="320"/><ColumnDefinition Width="20"/><ColumnDefinition/></Grid.ColumnDefinitions>
                         <StackPanel><TextBlock Text="Profiles" FontSize="28" FontWeight="Light"/><TextBlock Text="Save and reuse lab configurations." Style="{StaticResource Caption}" Margin="0,6,0,18"/><ListBox x:Name="ProfileList" Height="430" Background="#141824" Foreground="#EEF0F7" BorderBrush="#343C50" SelectionChanged="ProfileList_SelectionChanged"/><Button Style="{StaticResource PrimaryButton}" Content="New profile" Click="NewProfile_Click"/><Button Content="Duplicate selected" Click="DuplicateProfile_Click"/><Button Content="Delete selected" Click="DeleteProfile_Click"/></StackPanel>
-                        <Border Grid.Column="2" Style="{StaticResource Card}" Margin="0"><StackPanel><TextBlock Text="PROFILE DETAILS" Style="{StaticResource SectionTitle}"/><TextBlock Text="Name" Style="{StaticResource Caption}"/><TextBox x:Name="ProfileName"/><TextBlock Text="Assigned executable" Style="{StaticResource Caption}" Margin="0,10,0,0"/><TextBox x:Name="AssignedExecutable" ToolTip="Optional executable name used for future automatic switching."/><CheckBox x:Name="AutoApply" Content="Automatically apply when executable launches" Margin="0,12" Foreground="#EEF0F7"/><TextBlock Text="Auto-apply is stored in profiles. Process monitoring is not enabled in this MVP." Foreground="#E0B669" TextWrapping="Wrap"/>
+                        <Border Grid.Column="2" Style="{StaticResource Card}" Margin="0"><StackPanel><TextBlock Text="PROFILE DETAILS" Style="{StaticResource SectionTitle}"/><TextBlock Text="Name" Style="{StaticResource Caption}"/><TextBox x:Name="ProfileName"/><TextBlock Text="Assigned executable" Style="{StaticResource Caption}" Margin="0,10,0,0"/><TextBox x:Name="AssignedExecutable" ToolTip="Optional executable name or path used for automatic switching."/><CheckBox x:Name="AutoApply" Content="Automatically apply when executable launches" Margin="0,12" Foreground="#EEF0F7"/><TextBlock x:Name="AutoApplyStatus" Text="Monitoring enabled profiles every 2 seconds." Foreground="#E0B669" TextWrapping="Wrap"/>
                             <StackPanel Orientation="Horizontal" Margin="0,18,0,0"><Button Style="{StaticResource PrimaryButton}" Content="Save profile" Click="SaveProfile_Click"/><Button Content="Export JSON" Margin="10,4,0,4" Click="ExportProfile_Click"/><Button Content="Import JSON" Margin="10,4,0,4" Click="ImportProfile_Click"/></StackPanel></StackPanel></Border>
                     </Grid>
                 </TabItem>
@@ -135,8 +144,50 @@
                     <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel>
                         <TextBlock Text="Settings" FontSize="28" FontWeight="Light"/><TextBlock Text="Output controls and compatibility notes." Style="{StaticResource Caption}" Margin="0,6,0,20"/>
                         <Border Style="{StaticResource Card}"><StackPanel><TextBlock Text="LIGHT BAR" Style="{StaticResource SectionTitle}"/><TextBlock Text="Hex color" Style="{StaticResource Caption}"/><TextBox x:Name="LightBarColor" Text="#6C63FF" Width="180" HorizontalAlignment="Left"/><Button Content="Apply light-bar color" Width="180" HorizontalAlignment="Left" Click="ApplyLightBar_Click"/></StackPanel></Border>
-                        <Border Style="{StaticResource Card}"><StackPanel><TextBlock Text="VIBRATION TEST" Style="{StaticResource SectionTitle}"/><TextBlock Text="Conservative test strength" Style="{StaticResource Caption}"/><Slider x:Name="VibrationSlider" Minimum="0" Maximum="60" Value="20" Width="360" HorizontalAlignment="Left"/><Button Content="Run brief vibration test" Width="200" HorizontalAlignment="Left" Click="TestVibration_Click"/></StackPanel></Border>
-                        <Border Style="{StaticResource Card}"><StackPanel><TextBlock Text="VIRTUAL CONTROLLER OUTPUT" Style="{StaticResource SectionTitle}"/><CheckBox Content="Enable virtual-controller output" IsEnabled="False" Foreground="#98A1B5"/><TextBlock Text="Unavailable in this build. A reliable implementation requires an explicit driver dependency such as ViGEmBus; no driver is installed or requested automatically." Foreground="#E0B669" TextWrapping="Wrap" Margin="0,8,0,0"/></StackPanel></Border>
+                        <Border Style="{StaticResource Card}"><StackPanel><TextBlock Text="CONTROLLER LEDS AND MICROPHONE" Style="{StaticResource SectionTitle}"/>
+                            <TextBlock Text="Player LED bitmask (0-31)" Style="{StaticResource Caption}"/><Slider x:Name="PlayerLedsSlider" Minimum="0" Maximum="31" Value="4" TickFrequency="1" IsSnapToTickEnabled="True" Width="360" HorizontalAlignment="Left"/><Button Content="Apply player LEDs" Width="180" HorizontalAlignment="Left" Click="ApplyPlayerLeds_Click"/>
+                            <CheckBox x:Name="MicrophoneLedEnabled" Content="Microphone LED enabled" Margin="0,12,0,0" Foreground="#EEF0F7" Checked="MicrophoneLed_Changed" Unchecked="MicrophoneLed_Changed"/>
+                            <CheckBox x:Name="MicrophoneMuted" Content="Mute controller microphone" Margin="0,8,0,0" Foreground="#EEF0F7" Checked="MicrophoneMute_Changed" Unchecked="MicrophoneMute_Changed"/>
+                        </StackPanel></Border>
+                        <Border Style="{StaticResource Card}"><StackPanel><TextBlock Text="VIBRATION TEST" Style="{StaticResource SectionTitle}"/><TextBlock Text="Test strength" Style="{StaticResource Caption}"/><Slider x:Name="VibrationSlider" Minimum="0" Maximum="100" Value="20" Width="360" HorizontalAlignment="Left"/><Button Content="Run brief vibration test" Width="200" HorizontalAlignment="Left" Click="TestVibration_Click"/></StackPanel></Border>
+                        <Border Style="{StaticResource Card}"><StackPanel>
+                            <TextBlock Text="VIRTUAL XBOX 360 CONTROLLER" Style="{StaticResource SectionTitle}"/>
+                            <CheckBox x:Name="VirtualOutputEnabled" Content="Enable ViGEmBus virtual-controller output" Foreground="#EEF0F7" Checked="VirtualOutput_Changed" Unchecked="VirtualOutput_Changed"/>
+                            <TextBlock x:Name="VirtualOutputStatus" Text="Virtual output is disabled. Enable it after installing ViGEmBus." Foreground="#E0B669" TextWrapping="Wrap" Margin="0,8,0,14"/>
+                            <TextBlock Text="With physical HID input active, games receive the mapped controller state. In manual simulator mode, the controls below provide the exact state sent through ViGEm." Style="{StaticResource Caption}" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="20"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="LEFT STICK X" Style="{StaticResource Caption}"/><Slider x:Name="VirtualLeftX" Minimum="-1" Maximum="1" Value="0" TickFrequency=".05" ValueChanged="VirtualController_ValueChanged"/>
+                                    <TextBlock Text="LEFT STICK Y" Style="{StaticResource Caption}"/><Slider x:Name="VirtualLeftY" Minimum="-1" Maximum="1" Value="0" TickFrequency=".05" ValueChanged="VirtualController_ValueChanged"/>
+                                    <TextBlock Text="LEFT TRIGGER" Style="{StaticResource Caption}"/><Slider x:Name="VirtualLeftTrigger" Minimum="0" Maximum="1" Value="0" TickFrequency=".05" ValueChanged="VirtualController_ValueChanged"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="RIGHT STICK X" Style="{StaticResource Caption}"/><Slider x:Name="VirtualRightX" Minimum="-1" Maximum="1" Value="0" TickFrequency=".05" ValueChanged="VirtualController_ValueChanged"/>
+                                    <TextBlock Text="RIGHT STICK Y" Style="{StaticResource Caption}"/><Slider x:Name="VirtualRightY" Minimum="-1" Maximum="1" Value="0" TickFrequency=".05" ValueChanged="VirtualController_ValueChanged"/>
+                                    <TextBlock Text="RIGHT TRIGGER" Style="{StaticResource Caption}"/><Slider x:Name="VirtualRightTrigger" Minimum="0" Maximum="1" Value="0" TickFrequency=".05" ValueChanged="VirtualController_ValueChanged"/>
+                                </StackPanel>
+                            </Grid>
+                            <TextBlock Text="BUTTONS" Style="{StaticResource Caption}" Margin="0,12,0,5"/>
+                            <WrapPanel>
+                                <CheckBox x:Name="VirtualA" Content="A" Tag="A" Margin="0,0,14,7" Checked="VirtualController_ValueChanged" Unchecked="VirtualController_ValueChanged"/>
+                                <CheckBox x:Name="VirtualB" Content="B" Tag="B" Margin="0,0,14,7" Checked="VirtualController_ValueChanged" Unchecked="VirtualController_ValueChanged"/>
+                                <CheckBox x:Name="VirtualX" Content="X" Tag="X" Margin="0,0,14,7" Checked="VirtualController_ValueChanged" Unchecked="VirtualController_ValueChanged"/>
+                                <CheckBox x:Name="VirtualY" Content="Y" Tag="Y" Margin="0,0,14,7" Checked="VirtualController_ValueChanged" Unchecked="VirtualController_ValueChanged"/>
+                                <CheckBox x:Name="VirtualLB" Content="LB" Tag="LB" Margin="0,0,14,7" Checked="VirtualController_ValueChanged" Unchecked="VirtualController_ValueChanged"/>
+                                <CheckBox x:Name="VirtualRB" Content="RB" Tag="RB" Margin="0,0,14,7" Checked="VirtualController_ValueChanged" Unchecked="VirtualController_ValueChanged"/>
+                                <CheckBox x:Name="VirtualBack" Content="Back" Tag="Back" Margin="0,0,14,7" Checked="VirtualController_ValueChanged" Unchecked="VirtualController_ValueChanged"/>
+                                <CheckBox x:Name="VirtualStart" Content="Start" Tag="Start" Margin="0,0,14,7" Checked="VirtualController_ValueChanged" Unchecked="VirtualController_ValueChanged"/>
+                                <CheckBox x:Name="VirtualL3" Content="L3" Tag="L3" Margin="0,0,14,7" Checked="VirtualController_ValueChanged" Unchecked="VirtualController_ValueChanged"/>
+                                <CheckBox x:Name="VirtualR3" Content="R3" Tag="R3" Margin="0,0,14,7" Checked="VirtualController_ValueChanged" Unchecked="VirtualController_ValueChanged"/>
+                                <CheckBox x:Name="VirtualUp" Content="Up" Tag="Up" Margin="0,0,14,7" Checked="VirtualController_ValueChanged" Unchecked="VirtualController_ValueChanged"/>
+                                <CheckBox x:Name="VirtualDown" Content="Down" Tag="Down" Margin="0,0,14,7" Checked="VirtualController_ValueChanged" Unchecked="VirtualController_ValueChanged"/>
+                                <CheckBox x:Name="VirtualLeft" Content="Left" Tag="Left" Margin="0,0,14,7" Checked="VirtualController_ValueChanged" Unchecked="VirtualController_ValueChanged"/>
+                                <CheckBox x:Name="VirtualRight" Content="Right" Tag="Right" Margin="0,0,14,7" Checked="VirtualController_ValueChanged" Unchecked="VirtualController_ValueChanged"/>
+                            </WrapPanel>
+                            <Button Content="Reset virtual controller to neutral" Width="240" HorizontalAlignment="Left" Margin="0,8,0,0" Click="ResetVirtualController_Click"/>
+                            <TextBlock x:Name="VirtualValueSummary" Text="Left (0.00, 0.00)   Right (0.00, 0.00)&#x0a;Triggers L 0%   R 0%   Buttons None" Foreground="#BCC4D5" Margin="0,8,0,0"/>
+                        </StackPanel></Border>
                     </StackPanel></ScrollViewer>
                 </TabItem>
             </TabControl>
