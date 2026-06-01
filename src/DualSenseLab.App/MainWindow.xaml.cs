@@ -100,14 +100,20 @@ public partial class MainWindow : Window
         StartPosition = (int)start.Value, EndPosition = (int)end.Value, Strength = (int)strength.Value
     };
 
-    private void ApplyTriggers_Click(object sender, RoutedEventArgs e)
+    private void Trigger_ValueChanged(object sender, SelectionChangedEventArgs e) => ApplyTriggerEditorEffects();
+
+    private void ApplyTriggerEditorEffects()
     {
+        if (!_uiReady || LeftPreset is null || RightPreset is null ||
+            LeftStart is null || LeftEnd is null || LeftStrength is null ||
+            RightStart is null || RightEnd is null || RightStrength is null ||
+            TriggerStatus is null) return;
         try
         {
             _controller.ApplyTriggers(ReadTrigger(LeftPreset, LeftStart, LeftEnd, LeftStrength), ReadTrigger(RightPreset, RightStart, RightEnd, RightStrength));
             TriggerStatus.Text = _controller.Info.Connection == ConnectionType.Simulator
-                ? "Effects applied safely in simulator."
-                : "Adaptive-trigger effects applied to the physical controller.";
+                ? "Live effects updated safely in simulator."
+                : "Live adaptive-trigger effects updated on the physical controller.";
         }
         catch (Exception exception) { TriggerStatus.Text = exception.Message; }
     }
@@ -126,6 +132,7 @@ public partial class MainWindow : Window
             RightStart is null || RightEnd is null || RightStrength is null) return;
         LeftStartLabel.Text = $"{LeftStart.Value:F0}%"; LeftEndLabel.Text = $"{LeftEnd.Value:F0}%"; LeftStrengthLabel.Text = $"{LeftStrength.Value:F0}%";
         RightStartLabel.Text = $"{RightStart.Value:F0}%"; RightEndLabel.Text = $"{RightEnd.Value:F0}%"; RightStrengthLabel.Text = $"{RightStrength.Value:F0}%";
+        ApplyTriggerEditorEffects();
     }
 
     private void RunCalibration_Click(object sender, RoutedEventArgs e)
